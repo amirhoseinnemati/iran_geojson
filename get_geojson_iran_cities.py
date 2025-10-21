@@ -15,15 +15,19 @@ master_geojson = {
 }
 
 # Query for cities in Iran
-# Using place=city for major cities
+# Get all city and town boundaries regardless of admin_level
 overpass_query = '''
 [out:json][timeout:90];
 area["ISO3166-1"="IR"]["admin_level"="2"]->.iran;
 (
-  node["place"="city"](area.iran);
-  node["place"="town"](area.iran);
+  rel["place"="city"](area.iran);
+  rel["place"="town"](area.iran);
+  way["place"="city"](area.iran);
+  way["place"="town"](area.iran);
 );
 out body;
+>;
+out skel qt;
 '''
 
 print('Fetching cities from Iran...')
@@ -69,6 +73,10 @@ while failed_attempts:
 
         # Extract tags from nested structure and merge into properties
         for feature in geojson.get('features', []):
+            # Skip Point geometries - we only want areas/polygons
+            if feature.get('geometry', {}).get('type') == 'Point':
+                continue
+
             properties = feature.get('properties', {})
 
             # Extract tags from nested tags object
